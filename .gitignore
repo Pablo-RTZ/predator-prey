@@ -1,0 +1,22 @@
+# Matlab temporary files
+*.asv
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+
+# Latex
+*.aux
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+
+# Personal files
+Notes.md
+Roadmap.md
