@@ -12,6 +12,7 @@ In order to use this programs, you have to
 1. Clone or download the repository
 2. Add it to your MATLAB path
 3. Verify installation (Run `startup` and open any of the notebooks)
+4. Head over to the [documentation](Docs/Documentation.md) to see the writeup
 
 The folder contains a `startup.m` file, so running `startup` in the terminal will add all subfolders to your working directory until the program is closed. This way, programs from any folder can be run from the MATLAB folder inside the repository root directory.
 
