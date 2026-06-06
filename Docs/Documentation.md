@@ -27,7 +27,7 @@ The `LotkaVolterra.mlx` notebook inside the Notebooks folder shows some simulati
 - Prey grows by 50% monthly in absence of predators
 - 0.02 Prey encounters per month per predator
 - 1% Predator efficiency (in converting prey into offspring)
-- Predator population declines by 50% monthly in absence of prey
+- Predator population declines by 40% monthly in absence of prey
 - Initial population of 40 prey and 10 predators
 
 the resulting simulation (using RK4, 1000 timesteps) is

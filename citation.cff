@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+title: predator-prey
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Pablo
+    family-names: Ortiz Badenes
+repository-code: 'https://github.com/Pablo-RTZ/predator-prey'
+abstract: >-
+  A repository on the modelling of predator-prey relationships.
+license: GPL-3.0-or-later
