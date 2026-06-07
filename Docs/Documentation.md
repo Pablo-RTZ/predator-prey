@@ -104,11 +104,11 @@ $$
 0 =ax_1(1-\frac{x_1}K)-bx_1x_2\\0=cx_1x_2-dx_2
 \end{rcases}
 \implies \begin{cases}
-x_1=x_2=0\\ x_1=\frac dc,\quad x_2=\frac ab(1-\frac{d}{cK})
+x_1=x_2=0\\ x_1=K,\quad x_2=0\\ x_1=\frac dc,\quad x_2=\frac ab(1-\frac{d}{cK})
 \end{cases}
 $$
 
-### Numerical simulation
+### Numerical simulation (Logistic growth)
 
 By using the same parameters as before, but adding a carrying capacity, the model behavior changes, and now shows damped oscillations around the equilibrium points for the system. This shows how reducing growth rate when population approaches the carrying capacity adds a damping factor that stabilizes behavior. Simulating with Runge-Kutta, the following results are found.
 
@@ -116,4 +116,75 @@ By using the same parameters as before, but adding a carrying capacity, the mode
 
 ## Predator functional response
 
-Once prey growth rate has been limited, the next step to improve the current model, is to limit predator growth. Right now, sufficiently big prey populations would increase predator growth rate regardless of predator population. The equivalent to logistic growth, but applied to predator growth rate would be to add a functional response, so predator growth rate is capped by predator population. This makes ecological sense, because a point would be reached where increasing prey population would not further increase predator growth rate, as predators would be saturated (limited by reproduction or digestion rate).
+Once prey growth rate has been limited, the next step to improve the current model, is to limit predator growth. Right now, sufficiently big prey populations would increase predator growth rate regardless of predator population. The equivalent to logistic growth, but applied to predator growth rate would be to add a functional response, so predator growth rate is capped by predator population. This makes ecological sense, because a point would be reached where increasing prey population would not further increase predator growth rate, as predators would be saturated (limited by reproduction or digestion rate). The functional response used in this implementation will be the Type II response, which will lead to the Holling Type II model.
+
+This response is given by
+
+$$
+f(R)=\frac{aR}{1+ahR}
+$$
+
+where
+
+- $f(R)$: Denotes the consumption rate (per user)
+- $a$: Denotes the attack rate
+- $R$: Denotes  a resource (prey in this case)
+- $h$: Denotes the handling rate
+
+Assymptotically, it tends to $\frac 1h$, representing how for abundant prey, the predators will saturate at the reciprocal of the handling time. For example, for a handling time of 0.5 units (months per example), the prey consumption rate for sufficiently abundant prey will be 2 units per month. As prey population decreases, the actual consumption rate will be lower. By incorporating this factor, the resulting model is the Holling Type II model, given by the following ODE
+
+$$
+\begin{matrix}
+\frac{dx_1}{dt}=a x_1(1-\frac{x_1}{K})-\frac{bx_1}{1+hbx_1}x_2 \\
+\frac{dx_2}{dt}= c \frac{bx_1}{1+hbx_1}x_2-dx_2
+\end{matrix}
+$$
+
+where
+
+- $a$: Prey reproduction rate
+- $b$: Depredation rate
+- $c$: Predator reproduction rate
+- $d$: Predator death rate
+- $K$: Carrying capacity
+- $h$: Predator handling rate
+
+### Holling type II equilibrium points
+
+Setting both time derivatives to 0, the equilibrium points are the following
+
+$$
+\begin{rcases}
+0=a x_1(1-\frac{x_1}{K})-\frac{bx_1}{1+hbx_1}x_2 \\
+0= c \frac{bx_1}{1+hbx_1}x_2-dx_2
+\end{rcases}
+\implies \begin{cases}
+x_1=x_2=0\\ x_1=K,\quad x_2=0\\ x_1=\frac{d}{b(c-hd)},\quad x_2=-\frac{ac(d-bcK+bdhK)}{b^2(c-dh)^2K}
+\end{cases}
+$$
+
+### Numerical simulation (Holling Type II)
+
+When adding the predator handling time, with a handling time of 0.2 (6 days), the results are the following.
+
+![Holling Type II simulation](../Assets/Holling2.png)
+
+This code is available in the `FunctionalResponse.mlx` notebook, to be able to modify the parameters and see how the model reacts.
+
+## Seasonality (non autonomous ODEs)
+
+While these simulations can accurately model predator-prey dynamics in stable environments (tropical climates for example), they fail to portray the big effect seasonality can have on ecological dynamics. Thus, the next logical step is to add a non-autonomous term to the ODE, in order to model this phenomenon. This can be easily done by replacing any of the constants in any of the previous model, by a time dependent (usually periodic) function. In this case, the prey growth rate $a$ will be. changed to a function $a(t)$ given by
+
+$$
+a(t)=A\left(0.5+\cos^2\left(\frac{\pi t}{12}\right)\right)
+$$
+
+Note how the average value for the function will still be $A$, and the function is periodic with a period of 12 (a year).
+
+The rest of the model will be the same, but replacing the constant for the function. Note how now, equilibrium points will not exist, as they will constantly vary depending on the value of $a(t)$. However, if the previous equilibrium lines are plotted, they still correspond to the values around which the populations hover, due to the time averages being the same.
+
+### Numerical simulation (Seasonal Growth)
+
+Once the seasonal term is added, the results, while keeping the rest of the parameters the same are
+
+![Seasonal Growth simulation](../Assets/SeasonalGrowth.png)
