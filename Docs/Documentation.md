@@ -36,6 +36,21 @@ the resulting simulation (using RK4, 1000 timesteps) is
 
 ![Lotka-Volterra model](../Assets/LotkaVolterra.png)
 
+### Lotka-Volterra equilibrium points
+
+By setting the time derivatives to 0, equilibrium points for the model can be found. In this case,
+
+$$
+\begin{rcases}
+0 =ax_1-bx_1x_2\\0=cx_1x_2-dx_2
+\end{rcases}
+\implies \begin{cases}
+x_1=x_2=0\\ x_1=\frac dc,\quad x_2=\frac ab
+\end{cases}
+$$
+
+It is trivial to verify that for those pairs of initial conditions, the system will remain at equilibrium.
+
 ## ODE solvers comparison over Lotka-Volterra
 
 Due to this model not having a closed form solution, self-convergence tests will be used. In this case, Richardson convergence analysis will be used, where succesively precise iterations are compared, in order to obtain an aproximation of the theoretical convergence order. The aproximate convergence order is given by
@@ -44,7 +59,7 @@ $$
 p= \frac{\log \left(\frac{\|x_h - x_{h/2}\|}{\|x_{h/2} - x_{h/4}\|}\right)}{\log 2}
 $$
 
-A function is defined to, given $N$ and $iter$, calculate succesive iterations using $N,2N,4N,...$ steps, and get $iter$ different aproximations for the convergence orders.
+A function is defined (in the `NumericalComparison.mlx`notebook) to, given $N$ and $iter$, calculate succesive iterations using $N,2N,4N,...$ steps, and get $iter$ different aproximations for the convergence orders.
 
 Taking 10 initial timesteps, and doubling each iteration, the convergence orders are the following.
 
@@ -60,3 +75,45 @@ The main limitation of this testing method is that, if variable precission arith
 Compute time can also be compared for these methods. Despite the higher order methods having higher compute times (~5x at worst case), the massive precision increase is almost always worth it, due to the error being various orders of magnitude smaller. The results, for the implementations in this repository are the following.
 
 ![Computation time comparison](../Assets/ComputeTime.png)
+
+## Logistic prey growth
+
+As it has been found on the previous section, the compute cost of higher order methods is justifiable, so from now on, most simulation will onle be run on Runge-Kutta (RK4) or Dormand-Prince (DOPRIS5). The next simplest modification that can be done to the Lotka-Volterra model is to model prey evolution (in absence of predators), using logistic growth. This way, a carrying capacity $K$ can for the system can be added, so as prey population approaches it, its growth rate slows down, to simulate the decreasing resource availability. Once this aspect is considered, the resulting ODE is as follows
+
+$$
+\begin{matrix}
+\frac{dx_1}{dt}=a x_1(1-\frac{x_1}{K})-bx_1x_2 \\
+\frac{dx_2}{dt}= c x_1x_2-dx_2
+\end{matrix}
+$$
+
+where
+
+- $a$: Prey reproduction rate
+- $b$: Depredation rate
+- $c$: Predator reproduction rate
+- $d$: Predator death rate
+- $K$: Carrying capacity
+
+### Logistic model equilibrium points
+
+By setting the time derivatives to 0, the equilibrium points can be found.
+
+$$
+\begin{rcases}
+0 =ax_1(1-\frac{x_1}K)-bx_1x_2\\0=cx_1x_2-dx_2
+\end{rcases}
+\implies \begin{cases}
+x_1=x_2=0\\ x_1=\frac dc,\quad x_2=\frac ab(1-\frac{d}{cK})
+\end{cases}
+$$
+
+### Numerical simulation
+
+By using the same parameters as before, but adding a carrying capacity, the model behavior changes, and now shows damped oscillations around the equilibrium points for the system. This shows how reducing growth rate when population approaches the carrying capacity adds a damping factor that stabilizes behavior. Simulating with Runge-Kutta, the following results are found.
+
+![Logistic prey growth](../Assets/Logistic.png)
+
+## Predator functional response
+
+Once prey growth rate has been limited, the next step to improve the current model, is to limit predator growth. Right now, sufficiently big prey populations would increase predator growth rate regardless of predator population. The equivalent to logistic growth, but applied to predator growth rate would be to add a functional response, so predator growth rate is capped by predator population. This makes ecological sense, because a point would be reached where increasing prey population would not further increase predator growth rate, as predators would be saturated (limited by reproduction or digestion rate).
