@@ -188,3 +188,19 @@ The rest of the model will be the same, but replacing the constant for the funct
 Once the seasonal term is added, the results, while keeping the rest of the parameters the same are
 
 ![Seasonal Growth simulation](../Assets/SeasonalGrowth.png)
+
+### Another seasonal variation
+
+If more constants are set to change with seasons, interesting dynamics can be found. For example, predator rate can be set to vary with season (offsetted in respect to growth rate), while keeping its time average the same. Thus, bigger oscillations can be seen, while keeping the non autonomous equilibrium points as the point the values hover around. By taking
+
+$$
+d(t)=d\left(1+\alpha\cos\left(\frac{2\pi(t+\phi)}{12}\right)\right)
+$$
+
+and an offset of 3 months (winter-spring), the following results are obtained.
+
+![Seasonal Growth and Death simulation](../Assets/SeasonalGrowthDeath.png)
+
+When strong seasonality is paired with high growth and depredation rates, multi-year patterns can appear. In the following simulation, the high predator mortality during winter and high prey growth rate during spring lead to big prey populations, which makes predator populations grow rapidly, leading to prey near-extintion, and after some months, predator near-extintion. These sort of aperiodic, multi year patterns can appear when out of phase non autonomous terms are added to the models.
+
+![Multi year pattern](../Assets/SeasonalMultiYear.png)

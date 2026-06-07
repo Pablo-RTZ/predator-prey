@@ -2,7 +2,7 @@ function f = SeasonalGrowth(A,b,c,d,h,K)
 % SeasonalGrowth Models the predator-prey problem with functional
 % response and seasonality
 % 
-%   f = SeasonalGrowth(A,b,c,d)
+%   f = SeasonalGrowth(A,b,c,d,h,K)
 %
 %   Inputs:
 %       A - Average prey reproduction rate

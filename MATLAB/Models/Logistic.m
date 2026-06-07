@@ -1,8 +1,8 @@
-function f = Logistic(a,b,c,d, K)
+function f = Logistic(a,b,c,d,K)
 % Logistic Returns the ODE for the Lokta-Volterra model with logistic
 % growth
 % 
-%   f = Logistic(a,b,c,d)
+%   f = Logistic(a,b,c,d,K)
 %
 %   Inputs:
 %       a - Prey reproduction rate
