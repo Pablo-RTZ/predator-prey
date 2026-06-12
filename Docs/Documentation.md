@@ -42,10 +42,12 @@ By setting the time derivatives to 0, equilibrium points for the model can be fo
 
 $$
 \begin{rcases}
-0 =ax_1-bx_1x_2\\0=cx_1x_2-dx_2
+0 =ax_1-bx_1x_2 \\
+0=cx_1x_2-dx_2
 \end{rcases}
 \implies \begin{cases}
-x_1=x_2=0\\ x_1=\frac dc,\quad x_2=\frac ab
+x_1=x_2=0 \\
+x_1=\frac dc,\quad x_2=\frac ab
 \end{cases}
 $$
 
@@ -101,10 +103,13 @@ By setting the time derivatives to 0, the equilibrium points can be found.
 
 $$
 \begin{rcases}
-0 =ax_1(1-\frac{x_1}K)-bx_1x_2\\0=cx_1x_2-dx_2
+0 =ax_1(1-\frac{x_1}K)-bx_1x_2 \\
+0=cx_1x_2-dx_2
 \end{rcases}
 \implies \begin{cases}
-x_1=x_2=0\\ x_1=K,\quad x_2=0\\ x_1=\frac dc,\quad x_2=\frac ab(1-\frac{d}{cK})
+x_1=x_2=0 \\
+x_1=K,\quad x_2=0 \\
+x_1=\frac dc,\quad x_2=\frac ab(1-\frac{d}{cK})
 \end{cases}
 $$
 
@@ -159,7 +164,9 @@ $$
 0= c \frac{bx_1}{1+hbx_1}x_2-dx_2
 \end{rcases}
 \implies \begin{cases}
-x_1=x_2=0\\ x_1=K,\quad x_2=0\\ x_1=\frac{d}{b(c-hd)},\quad x_2=-\frac{ac(d-bcK+bdhK)}{b^2(c-dh)^2K}
+x_1=x_2=0 \\
+x_1=K,\quad x_2=0 \\
+x_1=\frac{d}{b(c-hd)},\quad x_2=-\frac{ac(d-bcK+bdhK)}{b^2(c-dh)^2K}
 \end{cases}
 $$
 
@@ -201,6 +208,75 @@ and an offset of 3 months (winter-spring), the following results are obtained.
 
 ![Seasonal Growth and Death simulation](../Assets/SeasonalGrowthDeath.png)
 
-When strong seasonality is paired with high growth and depredation rates, multi-year patterns can appear. In the following simulation, the high predator mortality during winter and high prey growth rate during spring lead to big prey populations, which makes predator populations grow rapidly, leading to prey near-extintion, and after some months, predator near-extintion. These sort of aperiodic, multi year patterns can appear when out of phase non autonomous terms are added to the models.
+When strong seasonality is paired with high growth and depredation rates, multi-year patterns can appear. In the following simulation, the high predator mortality during winter and high prey growth rate during spring lead to big prey populations, which makes predator populations grow rapidly, leading to prey near-extintion, and after some months, predator near-extintion. These type of aperiodic, multi year patterns can appear when out of phase non autonomous terms are added to the models.
 
 ![Multi year pattern](../Assets/SeasonalMultiYear.png)
+
+## Reaction-difussion model
+
+This section will focus on spatial models for the predator-prey problem. Therefore, instead of finding the values for the functions $x_1(t),x_2(t)$, functions for the predator and prey concentration in space and time will be found. To avoid confusion with the spatial coordinates, the prey and predator populations will be respectively represented by
+
+$$
+\begin{matrix}
+P(x,y,t) \\
+Z(x,y,t)
+\end{matrix}
+$$
+
+The problem will be restricted to $\Omega=[0,1]\times[0,1]\subset\mathbb R^2$, and will simulate local interaction between predator and prey (using any of the previous models), as well as spatial difussion (from areas with higher concentration to ones with lower). Thus, the problem will become a PDE system given by
+
+$$
+\begin{matrix}
+\frac{dP}{dt}=f(P,Z)+ D_P\nabla^2 P \\
+\frac{dZ}{dt}=g(P,Z)+ D_Z\nabla^2 Z
+\end{matrix}
+$$
+
+with $D_P,D_Z\in\mathbb R^+$. Due to the geometry of the spatial domain, finite differences on a regular grid will be used. For more complex geometries, other methods such as finite elements would be used, but the problem would become more complex.
+
+In order to numerically aproximate the Laplacian, taking $n_x,n_y$ points on each axis, the second order 5 point stencil will be used, given by
+
+$$
+\nabla^2 F_{i,j}\approx\frac{F_{i+1,j}-2F_{i,j}+F_{i-1,j}}{\Delta x^2}+\frac{F_{i,j+1}-2F_{i,j}+F_{i,j-1}}{\Delta y^2}
+$$
+
+where $\Delta x=\frac1{n_x-1},\,\Delta y=\frac1{n_y-1}$. Furthermore, no-flux boundary conditions will be used, to assume no interaction between the boundary and the outside. This can be mathematically represented as
+
+$$
+\frac{\partial P}{\partial\hat n}=\frac{\partial Z}{\partial\hat n}=0
+$$
+
+In this finite differences grid, it will be implemented by adding ghost points outside the grid that cancel the Laplacian term, for example $P_{0,j}=P_{2,j}$.
+
+### Explicit Euler
+
+Once the finite differences grid for the Laplacian is correctly defined, the next step is to find a suitable time integrator to numerically aproximate the time evolution. By using this discretization, the PDE problem can be interpreted as $n_xn_y$ different IVP, one per aproximation node. The simplest integrator, as with regular ODEs is explicit Euler. The general expression will be
+
+$$
+\begin{matrix}
+P^{n+1}=P^n+\Delta t(f(P^n,Z^n)+D_PLP^n) \\
+Z^{n+1}=Z^n+\Delta t(g(P^n,Z^n)+D_ZLZ^n)
+\end{matrix}
+$$
+
+where $f,g$ are both reaction function, $L$ is the discrete Laplacian and $D_P,D_Z$ are the difussion constants. The main drawback of using this time integrator, is that there is a maximum timestep size for the diffusion to be numerically stable. This boundary is known as the CFL conditon (proof is omitted). Thus, implicit methods will be preferred, as this limitation won't apply. For explicit Euler and central differences (5 point Laplacian stencil), the condition for stability is
+
+$$
+\Delta t\le \frac1{2D}\left(\frac1{\Delta x^2}+\frac1{\Delta y^2}\right)^{-1}
+$$
+
+This method can be implemented, in order to get the `EulerDiffusion.m` program. This solver is tailored for this problem (2 variables, $[0,1]\times[0,1]$ domain,...), so it isn't a generally aplicable solver, as implementing it would be more complex, and out of the scope of this repository. This program is meant to be readable and easily understandable. Furthermore, in order to speed up simulations and tests, the `EulerDiffusionSparce.m` is also available. It implements the same method, but takes advantage of the fact that the Laplacian is a sparce matrix, in order to speed up calculations using Kronecker products. However, due to the fact that is flattens and then reshapes the grid, some readability is lost.
+
+#### Numerical testing
+
+The `SpatialDiffusionEuler.mlx` notebook documents various simulations with using Explicit Euler to simulate reaction-diffusion. The notebook also contains animated heatmaps to show population over time. As for static content, spatial averages over time, and spacetime diagrams of horizontal bands will be used. Generally, spatial averages will behave similarly to the non spatial model, specially when using randomly perturbated maps as an initial condition, as diffusion will smooth out the results. For example, for Holling Type II and the same conditions as in previous sections, the results are the following
+
+![Holling Type II on randomly perturbated map](../Assets/HollingDiffusion.png)
+
+![Holling Type II spacetime](../Assets/HollingDiffusionST.png)
+
+Furthermore, if initial conditons other than random perturbations over stable values are used, interesting dynamics can be found. For example, if a predator patch is placed in the center, it will lead to local prey extintion, then expand, and slowly smooth over the rest of the grid.
+
+![Autonomous model with predator patch spacetime](../Assets/PredatorPatchDiffusion.png)
+
+### Crank-Nicholson
