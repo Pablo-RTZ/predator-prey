@@ -331,12 +331,21 @@ While Crank-Nicolson removes the diffusion stability restriction, it requires so
 
 The ADI method splits each timestep into two substeps. In the first substep, diffusion is treated implicitly in the $x$-direction and explicitly in the $y$-direction. In the second substep, the roles are reversed:
 
+Step 1:
+
 $$
 \begin{matrix}
-\text{Step 1:}&\quad \left(I-\frac{\Delta t D_P}{2}L_x\right)P^{*} &=& \left(I+\frac{\Delta t D_P}{2}L_y\right)P^n + \Delta t f(P^n,Z^n) \\
-&\quad \left(I-\frac{\Delta t D_Z}{2}L_x\right)Z^{*} &=& \left(I+\frac{\Delta t D_Z}{2}L_y\right)Z^n + \Delta t g(P^n,Z^n) \\[10pt]
-\text{Step 2:}&\quad \left(I-\frac{\Delta t D_P}{2}L_y\right)P^{n+1} &=& \left(I+\frac{\Delta t D_P}{2}L_x\right)P^{*} \\
-&\quad \left(I-\frac{\Delta t D_Z}{2}L_y\right)Z^{n+1} &=& \left(I+\frac{\Delta t D_Z}{2}L_x\right)Z^{*}
+\left(I-\frac{\Delta t D_P}{2}L_x\right)P^{ \ast } &= \left(I+\frac{\Delta t D_P}{2}L_y\right)P^n + \Delta t f(P^n,Z^n) \\
+\left(I-\frac{\Delta t D_Z}{2}L_x\right)Z^{ \ast } &= \left(I+\frac{\Delta t D_Z}{2}L_y\right)Z^n + \Delta t g(P^n,Z^n)
+\end{matrix}
+$$
+
+Step 2:
+
+$$
+\begin{matrix}
+\left(I-\frac{\Delta t D_P}{2}L_y\right)P^{n+1} &= \left(I+\frac{\Delta t D_P}{2}L_x\right)P^{\ast} \\
+\left(I-\frac{\Delta t D_Z}{2}L_y\right)Z^{n+1} &= \left(I+\frac{\Delta t D_Z}{2}L_x\right)Z^{\ast}
 \end{matrix}
 $$
 
@@ -368,3 +377,5 @@ As with other solvers, it is qualitatively indistinguishable, showing a tendency
 The different methods provide benefits for different situations. The Explicit Euler scheme is much faster than both CN and ADI, making it more suitable when high values of $n$ will be used. However, when diffusion requires prohibitively high numbers of steps, the other methods, depdespite being much less efficient per timestep, will be overall much faster, specially if memory requirements are to be considered. On the other side, the sparce implementation of Euler is, as expected, faster, due to the efficiency increase of storing only relevant components as opposed to big, mostly empty matrices.
 
 ![Compute time comparison](../Assets/ComputeTimeDiffusion.png)
+
+(When running this simulations, note that they can be pretty resource heavy, and background processes might alter results)

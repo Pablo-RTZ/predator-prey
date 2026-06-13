@@ -9,5 +9,5 @@ authors:
     family-names: Ortiz Badenes
 repository-code: 'https://github.com/Pablo-RTZ/predator-prey'
 abstract: >-
-  A repository on the modelling of predator-prey relationships.
+  A repository on the modelling of predator-prey relationships using numerical ODE solvers.
 license: GPL-3.0-or-later
