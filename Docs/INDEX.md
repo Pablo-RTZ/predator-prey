@@ -15,3 +15,6 @@
     - [Numerical simulation (Seasonal Growth)](Documentation.md#numerical-simulation-seasonal-growth)
     - [Another seasonal variation](Documentation.md#another-seasonal-variation)
   - [Reaction-difussion model](Documentation.md#reactiondifussion-model)
+    - [Explicit Euler](Documentation.md#explicit-euler)
+      - [Numerical testing](Documentation.md#numerical-testing)
+    - [Crank-Nicholson](Documentation.md#cranknicholson)

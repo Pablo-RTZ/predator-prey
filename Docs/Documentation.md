@@ -267,7 +267,7 @@ $$
 
 This method can be implemented, in order to get the `EulerDiffusion.m` program. This solver is tailored for this problem (2 variables, $[0,1]\times[0,1]$ domain,...), so it isn't a generally aplicable solver, as implementing it would be more complex, and out of the scope of this repository. This program is meant to be readable and easily understandable. Furthermore, in order to speed up simulations and tests, the `EulerDiffusionSparce.m` is also available. It implements the same method, but takes advantage of the fact that the Laplacian is a sparce matrix, in order to speed up calculations using Kronecker products. However, due to the fact that is flattens and then reshapes the grid, some readability is lost.
 
-#### Numerical testing
+#### Euler numerical testing
 
 The `SpatialDiffusionEuler.mlx` notebook documents various simulations with using Explicit Euler to simulate reaction-diffusion. The notebook also contains animated heatmaps to show population over time. As for static content, spatial averages over time, and spacetime diagrams of horizontal bands will be used. Generally, spatial averages will behave similarly to the non spatial model, specially when using randomly perturbated maps as an initial condition, as diffusion will smooth out the results. For example, for Holling Type II and the same conditions as in previous sections, the results are the following
 
@@ -279,4 +279,92 @@ Furthermore, if initial conditons other than random perturbations over stable va
 
 ![Autonomous model with predator patch spacetime](../Assets/PredatorPatchDiffusion.png)
 
-### Crank-Nicholson
+### Crank-Nicolson
+
+While explicit Euler is the simplest integrator, its restrictive stability condition makes it impractical for diffusion-dominated problems. However, the Crank-Nicolson method is unconditionally stable for linear diffusion, meaning there is no timestep restriction based on diffusion coefficients or grid spacing.
+
+The main difference is that the Crank-Nicolson scheme treats the diffusion terms implicitly while keeping the reaction terms explicit. The general expression is
+
+$$
+\begin{matrix}
+P^{n+1}=P^n+\Delta t\left(f(P^n,Z^n)+D_P\frac{LP^n+LP^{n+1}}{2}\right) \\
+Z^{n+1}=Z^n+\Delta t\left(g(P^n,Z^n)+D_Z\frac{LZ^n+LZ^{n+1}}{2}\right)
+\end{matrix}
+$$
+
+Rearranging terms to isolate the unknown values at time $n+1$ gives the linear system
+
+$$
+\begin{matrix}
+\left(I-\frac{\Delta t D_P}{2}L\right)P^{n+1}=P^n+\frac{\Delta t D_P}{2}LP^n+\Delta t f(P^n,Z^n) \\
+\left(I-\frac{\Delta t D_Z}{2}L\right)Z^{n+1}=Z^n+\frac{\Delta t D_Z}{2}LZ^n+\Delta t g(P^n,Z^n)
+\end{matrix}
+$$
+
+where $I$ is the identity matrix. Unlike explicit Euler, which directly computes $P^{n+1}$ and $Z^{n+1}$, Crank-Nicolson requires solving a linear system at each timestep. The matrices $M_P = I-\frac{\Delta t D_P}{2}L$ and $M_Z = I-\frac{\Delta t D_Z}{2}L$ are sparse and time-independent, allowing them to be factorized once and reused for all timesteps, making the scheme computationally efficient.
+
+The key advantage of Crank-Nicolson over explicit Euler is the removal of the diffusion stability restriction. For explicit Euler and central differences (5-point Laplacian stencil), the condition for stability is
+
+$$
+\Delta t \le \frac{1}{2D}\left(\frac{1}{\Delta x^2}+\frac{1}{\Delta y^2}\right)^{-1}
+$$
+
+Crank-Nicolson imposes no such bound for diffusion terms. However, the explicit treatment of reactions $f$ and $g$ (using Euler in this case), may still introduce stability restrictions if the reactions are stiff.
+
+This method is implemented in `CrankNicolsonDiffusion.m`. As with Euler, the solver is tailored for this specific problem (2 variables, $[0,1]\times[0,1]$ domain, Neumann boundary conditions), so it isn't a generally applicable solver, as implementing a general-purpose implicit PDE solver would be significantly more complex and out of the scope of this repository. This program is meant to be readable and easily understandable while demonstrating the key ideas of implicit time integration.
+
+This implementation constructs the 2D Laplacian $L$ as a sparse matrix using Kronecker products, $L = I_y \otimes L_x + L_y \otimes I_x$, where $L_x$ and $L_y$ are the 1D Laplacian matrices with Neumann boundary conditions. The matrices $M_P$ and $M_Z$ are then formed and factorized using LU decomposition. For each timestep, the right-hand side is assembled from the current solution and reaction terms, then the linear systems are solved via forward/backward substitution. This approach maintains the sparsity of the problem while avoiding the need to solve from scratch at each timestep.
+
+The main trade-off compared to explicit Euler is the increased complexity per timestep: explicit Euler only requires matrix-vector multiplications, while Crank-Nicolson requires solving linear systems. However, for diffusion-dominated problems where explicit Euler would need impractically small timesteps, the implicit method becomes faster overall despite the higher per-step cost. For problems where reactions are the primary source of stiffness, fully implicit treatment of both diffusion and reactions would be necessary, but that requires solving nonlinear systems.
+
+#### Crank-Nicolson numerical testing
+
+This solvers behavior is quualitatively indistinguishable from Euler, however, on problems where Euler collapses due to diffusion being too quick, it stays numerically stable. For example, if Holling Type II is used, but the timestep is increased (less steps) and diffusion coefficients are increased, this can be clearly seen.
+
+![Holling simulated with Crank-Nicolson](../Assets/HollingCN.png)
+
+![Holling simulated with Euler](../Assets/HollingEulerCollapse.png)
+
+### Alternating Direction Implicit (ADI)
+
+While Crank-Nicolson removes the diffusion stability restriction, it requires solving a large 2D linear system at each timestep. The Alternating Direction Implicit (ADI) method offers a compromise: it retains unconditional stability for linear diffusion but replaces the 2D solve with a sequence of cheaper 1D solves.
+
+The ADI method splits each timestep into two substeps. In the first substep, diffusion is treated implicitly in the $x$-direction and explicitly in the $y$-direction. In the second substep, the roles are reversed:
+
+$$
+\begin{matrix}
+\text{Step 1:}&\quad \left(I-\frac{\Delta t D_P}{2}L_x\right)P^{*} &=& \left(I+\frac{\Delta t D_P}{2}L_y\right)P^n + \Delta t f(P^n,Z^n) \\
+&\quad \left(I-\frac{\Delta t D_Z}{2}L_x\right)Z^{*} &=& \left(I+\frac{\Delta t D_Z}{2}L_y\right)Z^n + \Delta t g(P^n,Z^n) \\[10pt]
+\text{Step 2:}&\quad \left(I-\frac{\Delta t D_P}{2}L_y\right)P^{n+1} &=& \left(I+\frac{\Delta t D_P}{2}L_x\right)P^{*} \\
+&\quad \left(I-\frac{\Delta t D_Z}{2}L_y\right)Z^{n+1} &=& \left(I+\frac{\Delta t D_Z}{2}L_x\right)Z^{*}
+\end{matrix}
+$$
+
+where $L_x$ and $L_y$ are the 1D Laplacian operators in the $x$ and $y$ directions, respectively. The reaction terms $f$ and $g$ are only evaluated in the first substep (explicitly), following the same pattern as Crank-Nicolson.
+
+The main differnece is that each substep requires solving many small tridiagonal systems instead of one large sparse system. Step 1 solves $N_y$ independent systems of size $N_x$ (one for each $y$-line), while Step 2 solves $N_x$ independent systems of size $N_y$ (one for each $x$-line). The computational cost per timestep drops from $O((N_x N_y)^3)$ for a direct 2D solve to $O(N_x N_y \cdot \min(N_x, N_y))$ for ADI.
+
+Like Crank-Nicolson, ADI is unconditionally stable for linear diffusion problems. The matrices $I-\frac{\Delta t D_P}{2}L_x$, $I-\frac{\Delta t D_Z}{2}L_x$, $I-\frac{\Delta t D_P}{2}L_y$, and $I-\frac{\Delta t D_Z}{2}L_y$ are time-independent and tridiagonal. Each can be factorized once (using LU decomposition) and reused for all timesteps and all lines within each substep.
+
+This method is implemented in `ADIDiffusion.m`. For each timestep:
+
+1. The reaction terms are computed explicitly from the current solution
+2. **Step 1:** For each $y$-line, the right-hand side $P^n + \frac{\Delta t D_P}{2}L_y P^n + \Delta t f$ is assembled and the tridiagonal system is solved to obtain $P^*$
+3. **Step 2:** For each $x$-line, the right-hand side $P^* + \frac{\Delta t D_P}{2}L_x P^*$ is assembled and the tridiagonal system is solved to obtain $P^{n+1}$
+4. The same procedure is applied to $Z$
+
+For typical grid sizes ($N_x, N_y \gg 100$), ADI can be orders of magnitude faster than solving the full 2D system directly, while maintaining identical stability and second-order accuracy. This makes ADI particularly attractive for large-scale diffusion problems where Crank-Nicolson would be computationally prohibitive.
+
+As with the other solvers presented here, this implementation is tailored to the specific problem (2 variables, $[0,1]\times[0,1]$ domain, Neumann boundary conditions) and is intended to be readable and educational rather than a general-purpose PDE solver. The ADI pattern, however, generalizes straightforwardly to other domains and boundary conditions by modifying the 1D Laplacian matrices $L_x$ and $L_y$.
+
+#### ADI numerical testing
+
+As with other solvers, it is qualitatively indistinguishable, showing a tendency to stabilize over time on these models. For example, when solving the non-autonomous model, with only 100 steps, the results are the following.
+
+![Seasonal model solved with ADI](../Assets/SeasonalADI.png)
+
+### Diffusion methods comparison
+
+The different methods provide benefits for different situations. The Explicit Euler scheme is much faster than both CN and ADI, making it more suitable when high values of $n$ will be used. However, when diffusion requires prohibitively high numbers of steps, the other methods, depdespite being much less efficient per timestep, will be overall much faster, specially if memory requirements are to be considered. On the other side, the sparce implementation of Euler is, as expected, faster, due to the efficiency increase of storing only relevant components as opposed to big, mostly empty matrices.
+
+![Compute time comparison](../Assets/ComputeTimeDiffusion.png)
