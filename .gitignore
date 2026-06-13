@@ -16,6 +16,7 @@ Thumbs.db
 *.toc
 *.lof
 *.lot
+*.log
 
 # Personal files
 Notes.md

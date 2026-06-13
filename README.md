@@ -49,6 +49,8 @@ The repository aims to cover the following topics
 - Seasonality
 - Spatial models (reaction-diffusion)
 
+It is documented in markdown format in the [Docs](Docs/Documentation.md) file, and also available in Latex format (compile using LuaTex), precompiled as a [PDF](Latex/Writeup.pdf).
+
 ## License
 
 This project is licensed under the GNU General Public License v3.0 or later (GPL-3.0-or-later).
