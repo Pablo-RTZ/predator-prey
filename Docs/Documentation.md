@@ -72,7 +72,7 @@ Taking 10 initial timesteps, and doubling each iteration, the convergence orders
 | RK4            | 3.9980  | 3.9791  | 3.9678  | 3.9832  | 3.9915  |
 | DormandPrince  | 6.5154  | 5.8117  | 5.5196  | 5.3225  | 5.1860  |
 
-The main limitation of this testing method is that, if variable precission arithmetic is not used, the higher order methods' calculations will eventually collapse, due to rounding error dominating over the method's error.
+The main limitation of this testing method is that, if variable precision arithmetic is not used, the higher order methods' calculations will eventually collapse, due to rounding error dominating over the method's error.
 
 Compute time can also be compared for these methods. Despite the higher order methods having higher compute times (~5x at worst case), the massive precision increase is almost always worth it, due to the error being various orders of magnitude smaller. The results, for the implementations in this repository are the following.
 
@@ -351,7 +351,7 @@ $$
 
 where $L_x$ and $L_y$ are the 1D Laplacian operators in the $x$ and $y$ directions, respectively. The reaction terms $f$ and $g$ are only evaluated in the first substep (explicitly), following the same pattern as Crank-Nicolson.
 
-The main differnece is that each substep requires solving many small tridiagonal systems instead of one large sparse system. Step 1 solves $N_y$ independent systems of size $N_x$ (one for each $y$-line), while Step 2 solves $N_x$ independent systems of size $N_y$ (one for each $x$-line). The computational cost per timestep drops from $O((N_x N_y)^3)$ for a direct 2D solve to $O(N_x N_y \cdot \min(N_x, N_y))$ for ADI.
+The main difference is that each substep requires solving many small tridiagonal systems instead of one large sparse system. Step 1 solves $N_y$ independent systems of size $N_x$ (one for each $y$-line), while Step 2 solves $N_x$ independent systems of size $N_y$ (one for each $x$-line). The computational cost per timestep drops from $O((N_x N_y)^3)$ for a direct 2D solve to $O(N_x N_y \cdot \min(N_x, N_y))$ for ADI.
 
 Like Crank-Nicolson, ADI is unconditionally stable for linear diffusion problems. The matrices $I-\frac{\Delta t D_P}{2}L_x$, $I-\frac{\Delta t D_Z}{2}L_x$, $I-\frac{\Delta t D_P}{2}L_y$, and $I-\frac{\Delta t D_Z}{2}L_y$ are time-independent and tridiagonal. Each can be factorized once (using LU decomposition) and reused for all timesteps and all lines within each substep.
 
@@ -379,3 +379,142 @@ The different methods provide benefits for different situations. The Explicit Eu
 ![Compute time comparison](../Assets/ComputeTimeDiffusion.png)
 
 (When running this simulations, note that they can be pretty resource heavy, and background processes might alter results)
+
+## Delay differential equations
+
+Spatial models have not been thoroughly developed, only briefly introduced on the previous section. However, this section will veer towards a different direction. It will introduce delay models, where the evolution of the system depends not only on the current state, but also on its previous state. This allows for more complex phenomenons to be considered, such as gestation (predator growth being dependent on previous prey concentration).
+
+### Delayed predator-prey models
+
+For example, the Lotka-Volterra equations with logistic prey growth can be adapted to introduce predator gestation, so predator growth depends on prey consumed in the past. The equations become
+
+$$
+\begin{matrix}
+\frac{dx_1}{dt}=a x_1(t)\left(1-\frac{x_1(t)}{K}\right)-bx_1(t)x_2(t) \\
+\frac{dx_2}{dt}= c x_1(t-\tau)x_2(t-\tau)-dx_2(t)
+\end{matrix}
+$$
+
+where $\tau\in\mathbb R^+$.
+
+Similarly, the standard Lotka-Volterra model can be adapted in the same way. Despite the logistic growth usually modelling real world phenomenons in a more accurate way, the stantdard Lotka-Volterra will be also used as its dynamics will be more interesting. The resulting equation are
+
+$$
+\begin{matrix}
+\frac{dx_1}{dt}=a x_1(t)-bx_1(t)x_2(t) \\
+\frac{dx_2}{dt}= c x_1(t-\tau)x_2(t-\tau)-dx_2(t)
+\end{matrix}
+$$
+
+where $\tau\in\mathbb R^+$.
+
+#### Stability analysis for delayed predator gestation, logistic prey growth
+
+As with ODEs, delay differential equations (DDE from now onwards) have equilibrium points that can be found by setting time derivatives to 0. For this model,
+
+$$
+\begin{matrix}
+a x_1(t)\left(1-\frac{x_1(t)}{K}\right)-bx_1(t)x_2(t)=0 \\
+c x_1(t-\tau)x_2(t-\tau)-dx_2(t)=0
+\end{matrix}
+$$
+
+Furthermore, due to the model being at equilibrium, it is constant in time, so it follows that $x_1(t)=x_1(t-\tau),\quad x_2(t)=x_2(t-\tau)$. Therefore, it can be seen that the equilibrium points will be the same as for the non time-dependent model ($x_1^*=\frac dc,x_2^*=\frac ab(1-\frac d{cK})$). On top of finding the equilibrium points, one area of special interest is finding the stability conditions for the model. In order to do so, the first step is to turn the model into linear DDE form. Let the equilibrium point for the model be $X^*=(x_1^*, x_2^*)^T=(\frac dc,\frac ab(1-\frac d{cK}))^T$, and a perturbation around it be considered, of the form $x_1=x_1^*+u,\quad x_2=x_2^*+v,\quad y=(u,v)^T$. Then, the standard DDE linear form will be
+
+$$
+y'(t)=Ay(t)+By(t-\tau),\quad A,B\in\mathbb R^{2\times2}
+$$
+
+constant matrices. This linear form can be found from the Taylor expansion of the DDE. Assuming small $y$,
+
+$$
+F(X^*+y(t),X^*+y(t-\tau))=\underbrace{F(X^*,X^*)}_{=0}+\frac{\partial F}{\partial X}y(t)+\frac{\partial F}{\partial X_\tau}y(t-\tau)+...\approx \frac{\partial F}{\partial X}y(t)+\frac{\partial F}{\partial X_\tau}y(t-\tau)
+$$
+
+Therefore, the desired matrices are the Jacobians for the delayed and non-delayed terms, evaluated at the equilibrium points. In this case, after computing the required partial derivatives, the results are as follows,
+
+$$
+A=\begin{bmatrix} -\frac{ad}{cK}& -\frac{bd}c\\ 0& -d\end{bmatrix},\quad B=\begin{bmatrix}0&0\\\frac{a(-d+cK)}{bK}&d\end{bmatrix}
+$$
+
+Once this linear form is found, the behavior of perturbations around equilibrium can be studied. An exponential solution of the form $y(t)=e^{\lambda t}q,\quad q\in\mathbb R^{2\times 1},\lambda\in\mathbb C$ can be assumed, it containing both growth/decay and/or oscillation in a certain direction. It can be seen that $y'(t)=\lambda e^{\lambda t}q$, and substituting into the linear form,
+
+$$
+\lambda e^{\lambda t}q= A e^{\lambda t}q+Be^{\lambda(t-\tau)}q\implies\lambda q=Aq+Be^{-\lambda \tau}q\implies (\lambda I-A-Be^{-\lambda \tau})q=0
+$$
+
+For it to have a non-trivial solution $q$, the matrix must be singular, so $\det(\lambda I-A-Be^{-\lambda \tau})=0$ which is the characteristic equation, which is trascendental.
+
+For the system to grow exponentially and become unstable, $\Re(\lambda)>0$, so in the transition, $\lambda=i\omega$. Expanding and simplifying the determinant,
+
+$$
+e^{-i\tau\omega} (-2icd(c+(b-c)e^{i\tau\omega})K\omega
++ a(bd(-d+cK) + c(-d(d+2i\omega) + de^{i\tau\omega}(d+2i\omega) + 2icK\omega
+)))=0
+$$
+
+By setting the real and imaginary part to 0, the critical delay $\tau$ and frequency $\omega$ must satisfy
+
+$$
+\begin{matrix}
+ac d^{2} - ad\left((b+c)d-bcK\right)\cos(\tau\omega) - 2c\left(ad+c(-a+d)K\right)\omega\sin(\tau\omega) = 0
+\\
+2cd(a-bK+cK)\omega - 2c\left(ad+c(-a+d)K\right)\omega\cos(\tau\omega) + ad\left((b+c)d-bcK\right)\sin(\tau\omega) = 0
+\end{matrix}
+$$
+
+(The full symbolic derivation is in [`Log_DDE_Stability.nb`](../Mathematica/Log_DDE_Stability.nb))
+
+#### Stability analysis for delayed Lotka-Volterra
+
+By following the same procedure, the stability conditions. The full symbolic derivation is in the [`LotkaVolterra_DDE_Stability.nb`](../Mathematica/LotkaVolterra_DDE_Stability.nb) notebook. The results for the linear form and stability condtions are,
+
+$$
+A = \begin{bmatrix}0&-\frac{bd}c\\0&-d\end{bmatrix},\quad B=\begin{bmatrix}0&0\\\frac{ac}b& d\end{bmatrix}
+$$
+
+$$
+\det(i\omega I-A-Be^{-i\omega \tau})=0=
+-\frac{2i(b-c)d\omega}c+\frac{e^{-i\tau\omega}(adb+2iac\omega-2ibd\omega)}b\implies
+$$
+
+$$
+\begin{cases}
+ad\cos(\tau\omega)+\frac{2(ac-bd)\omega\sin(\tau\omega)}b=0\\
+\frac{2(ac-bd)\omega\cos(\tau\omega)}b+d\left(2\omega-\frac{2b\omega}c-a\sin(\tau\omega)\right)=0
+\end{cases}
+$$
+
+### Numerical solvers for DDEs (method of steps)
+
+The method described in this repository to numerically solve these DDEs will be the Method of Steps. The intuition behind it is to divide the domain into intervals of length $\tau$, and for each one, solve a regular ODE, as the delayed term will be completely determined by the previous interval. The main caveats are the first interval, where a history function $\phi(t)=X(t),t\le0$ has to be provided (it will normally be taken constant with the same value as the initial conditions), and the last interval, which in this implementation will be expanded to line up with an integer multiple of $\tau$. Also, the methods used might sometimes require points outside the interpolation nodes, so interpolation (cubic in this case) or some form or dense output will be needed. Taking this into consideration, the integrator used to solve each of the ODEs can be any IVP solver, so it will be left as a parameter that can be changed. This implementation of the method of steps can be found in the `StepsMethod.m` method.
+
+### DDE numerical implementation
+
+The logistic Lotka-Volterra method remains stable even after including gestation time. It can be noted that, when compared to the undelayed model, it shows bigger oscillations at a lower frequency, which is to be expected, as delaying the population growth response leads to bigger oscillations, due to overshooting and undershooting.
+
+![Delayed vs undelayed Lotka-Volterra](../Assets/DDELogLotkaVolterra.png)
+
+This model is unconditially stable, as the logistic growth caps the total population, making it so populations cannot grow indefinitely. As expected, nonlinear solvers fail to find a critical delay, and the contours of the stabilty equations derived in rprevious sections appear to grow closer but not cross
+
+![Logistic model zero-contours](../Assets/LogisticContours.png)
+
+On the other hand, the Lotka-Volterra model shows radically different behavior. For small delays, it appears to behave chaotically, as it can be seen in the following plot
+
+![Lotka-Volterra with small delay](../Assets/LotkaDDEsmall.png)
+
+As the delays increase, the model eventually explodes due to numerical precision limits.
+
+![Lotka-Volterra with bigger delay](../Assets/LotkaDDEbig.png)
+
+Plotting both contours show a root at around $\tau=20$, but the chaotic behavior suggests another cause
+
+![Lotka-Volterra model zero-contours](../Assets/LotkaContours.png)
+
+Furthermore, the model seems to grow exponentially regardless of the amplitude of the perturbation around equilibrium (it was taken as an assumption that it would be small). Assuming a small sinusoidal perturbation around equilibrium, it can be seen how the growth is exponential (linear in a semilogy plot).
+
+![Predator population against perturbation](../Assets/PredatorPerturbation.png)
+
+![Oscillation amplitude as a function of perturbation](../Assets/PerturbationDDE.png)
+
+The Lotka-Volterra simulations in the first section showed a neutral equilibrium, with oscillations never being damped by the model. Thus, it can be reasoned that, as the LotkaVolterra is neutrally stable, so any phase lag introduced by the delay won't be damped, always leading to growing oscillations.

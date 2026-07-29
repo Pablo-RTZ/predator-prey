@@ -32,3 +32,11 @@
 - [Alternating Direction Implicit (ADI)](Documentation.md#alternating-direction-implicit-adi)
   - [ADI numerical testing](Documentation.md#adi-numerical-testing)
 - [Diffusion methods comparison](Documentation.md#diffusion-methods-comparison)
+
+## [Delay differential equations](Documentation.md#delay-differential-equations)
+
+- [Delayed predator-prey models](Documentation.md#delayed-predatorprey-models)
+  - [Stability analysis for delayed predator gestation, logistic prey growth](Documentation.md#stability-analysis-for-delayed-predator-gestation-logistic-prey-growth)
+  - [Stability analysis for delayed Lotka-Volterra](Documentation.md#stability-analysis-for-delayed-lotkavolterra)
+- [Numerical solvers for DDEs (method of steps)](Documentation.md#numerical-solvers-for-ddes-method-of-steps)
+- [DDE numerical implementation](Documentation.md#dde-numerical-implementation)
