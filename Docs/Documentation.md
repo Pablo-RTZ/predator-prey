@@ -495,7 +495,7 @@ The logistic Lotka-Volterra method remains stable even after including gestation
 
 ![Delayed vs undelayed Lotka-Volterra](../Assets/DDELogLotkaVolterra.png)
 
-This model is unconditially stable, as the logistic growth caps the total population, making it so populations cannot grow indefinitely. As expected, nonlinear solvers fail to find a critical delay, and the contours of the stabilty equations derived in rprevious sections appear to grow closer but not cross
+This model is unconditially stable, as the logistic growth caps the total population, making it so populations cannot grow indefinitely. As expected, nonlinear solvers fail to find a critical delay, and the contours of the stabilty equations derived in previous sections appear to grow closer but not cross
 
 ![Logistic model zero-contours](../Assets/LogisticContours.png)
 
